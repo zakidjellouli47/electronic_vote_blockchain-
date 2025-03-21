@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+        line-height: 1.5;
+        font-weight: 400;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+
+        --background: 252 252 252;
+        --bars: 255 255 255;
+        --foreground: 12 13 13;
+        --neutral: 43 47 54;
+
+        --card: 255 255 255;
+        --card-foreground: 12 13 13;
+
+        --popover: 255 255 255;
+        --popover-foreground: 12 13 13;
+
+        --primary: 120 52 191;
+        --primary-foreground: 241 245 249;
+
+        --secondary: 71 71 235;
+        --secondary-foreground: 29 31 35;
+
+        --muted: 241 245 249;
+        --muted-foreground: 107 114 128;
+
+        --accent: 66 106 245;
+        --accent-foreground: 29 31 35;
+
+        --destructive: 239 68 68;
+        --destructive-foreground: 241 245 249;
+
+        --border: 203 213 225;
+        --input: 226 232 240;
+        --ring: 12 13 13;
+
+        --radius: 0.5rem;
+
+        --loginCard: 224 224 224;
+
+        --sidebar-background: 0 0% 98%;
+        --sidebar-foreground: 240 5.3% 26.1%;
+        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-primary-foreground: 0 0% 98%;
+        --sidebar-accent: 240 4.8% 95.9%;
+        --sidebar-accent-foreground: 240 5.9% 10%;
+        --sidebar-border: 220 13% 91%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+    }
+
+    .dark {
+        --sidebar-background: 240 5.9% 10%;
+        --sidebar-foreground: 240 4.8% 95.9%;
+        --sidebar-primary: 224.3 76.3% 48%;
+        --sidebar-primary-foreground: 0 0% 100%;
+        --sidebar-accent: 240 3.7% 15.9%;
+        --sidebar-accent-foreground: 240 4.8% 95.9%;
+        --sidebar-border: 240 3.7% 15.9%;
+        --sidebar-ring: 217.2 91.2% 59.8%;
+
+        --background: 9 9 11;
+        --foreground: 241 245 249;
+        --bars: 24 24 27;
+        --neutral: 214 216 220;
+
+        --card: 28 33 45;
+        --card-foreground: 241 245 249;
+
+        --popover: 12 13 13;
+        --popover-foreground: 241 245 249;
+
+        --primary: 120 52 191;
+        --primary-foreground: 29 31 35;
+
+        --secondary: 71 71 235;
+        --secondary-foreground: 241 245 249;
+
+        --muted: 45 55 72;
+        --muted-foreground: 156 163 175;
+
+        --accent: 66 106 245;
+        --accent-foreground: 241 245 249;
+
+        --destructive: 239 68 68;
+        --destructive-foreground: 241 245 249;
+
+        --border: 45 55 72;
+        --input: 45 55 72;
+        --ring: 209 213 219;
+
+        --loginCard: 91 79 164;
+    }
+}
+
+h1 {
+    font-size: 30px;
+    line-height: 1.1;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}

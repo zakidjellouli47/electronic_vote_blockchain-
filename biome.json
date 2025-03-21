@@ -1,0 +1,45 @@
+{
+    "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+    "files": {
+      "ignore": ["dist/*", "node_modules/*"]
+    },
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "lineWidth": 80
+    },
+    "linter": {
+        "rules": {
+          "recommended": true,
+          "suspicious": {
+            "noExplicitAny": "warn",
+            "noArrayIndexKey":"info",
+            "noAssignInExpressions":"info"
+          },
+          "correctness": {
+            "useExhaustiveDependencies": "off",
+            "noUnusedImports": "warn",
+            "noUnusedVariables":"warn",
+            "noUndeclaredVariables":"error"
+          },
+          "complexity": {
+            "noUselessFragments": "off",
+            "noForEach":"info"
+          },
+          "nursery": {
+            "useImportRestrictions": "off"
+          },
+          "style":{
+            "useConst":"info"
+          }
+        },
+      
+      "enabled": true
+    },
+    "javascript": {
+      "formatter": {
+        "quoteStyle": "single",
+        "trailingCommas": "es5"
+      }
+    }
+  }
