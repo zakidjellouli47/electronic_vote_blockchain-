@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from './api';
+import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
 const Login = ({ onFormSwitch }) => {
@@ -7,16 +7,21 @@ const Login = ({ onFormSwitch }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    try {
-      const { data } = await api.post('login/', formData);
-      localStorage.setItem('token', data.token);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
-    }
-  };
+// src/Login.js
+const handleSubmit = async e => {
+  e.preventDefault();
+  setError('');
+  try {
+    const response = await api.post('login/', formData);
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('user_id', response.data.user_id);
+    localStorage.setItem('email', response.data.email);
+    navigate('/dashboard');
+  } catch (err) {
+    setError(err.response?.data?.error || 'Login failed. Please try again.');
+    console.error('Login error:', err);
+  }
+};
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-8">

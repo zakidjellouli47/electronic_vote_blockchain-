@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from './api';
+import api from '../lib/api';
 import { useNavigate } from 'react-router-dom';
 
 const Register = ({ onFormSwitch }) => {
@@ -12,16 +12,30 @@ const Register = ({ onFormSwitch }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async e => {
-    e.preventDefault();
-    try {
-      const { data } = await api.post('register/', formData);
-      localStorage.setItem('token', data.token);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+ // src/Register.js
+const handleSubmit = async e => {
+  e.preventDefault();
+  setError('');
+  try {
+    const response = await api.post('register/', formData);
+    localStorage.setItem('token', response.data.token);
+    localStorage.setItem('user_id', response.data.user_id);
+    localStorage.setItem('email', response.data.email);
+    navigate('/dashboard');
+  } catch (err) {
+    const errorData = err.response?.data;
+    if (errorData) {
+      // Handle field-specific errors from Django
+      const errorMessages = Object.entries(errorData)
+        .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(' ') : errors}`)
+        .join('\n');
+      setError(errorMessages);
+    } else {
+      setError('Registration failed. Please try again.');
     }
-  };
+    console.error('Registration error:', err);
+  }
+};
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-8">
