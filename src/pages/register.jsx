@@ -1,78 +1,121 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../lib/api';
+import React, { useState, useEffect } from 'react';
 
-const Register = ({ onFormSwitch }) => {
+const Register = ({ onFormSwitch, api, navigate }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
-    role: ''
+    role: '',
+    selected_election: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [canBeElector, setCanBeElector] = useState(false);
+  const [availableElections, setAvailableElections] = useState([]);
+  const [loadingElections, setLoadingElections] = useState(true);
+
+  // Fetch available elections on component mount
+  useEffect(() => {
+    fetchAvailableElections();
+  }, []);
+
+  const fetchAvailableElections = async () => {
+    try {
+      setLoadingElections(true);
+      const response = await api.getAvailableElections();
+      setAvailableElections(response.data.elections || []);
+      console.log('📋 Available elections:', response.data.elections);
+    } catch (error) {
+      console.error('Failed to fetch elections:', error);
+      setError('Failed to load available elections');
+    } finally {
+      setLoadingElections(false);
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({...formData, [e.target.id]: e.target.value});
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setIsLoading(true);
-  
-  if (!formData.role) {
-    setError('Please select a role');
-    setIsLoading(false);
-    return;
-  }
-
-  // Convert role to the format your serializer expects
-  const registrationData = {
-    username: formData.username,
-    email: formData.email,
-    password: formData.password,
-    is_candidate: formData.role === 'candidate',
-    is_elector: formData.role === 'elector',
-    // Leave wallet_address empty - will be assigned dynamically during blockchain operations
-    wallet_address: '',
-    verified: false
+  const handleRoleChange = (selectedRole) => {
+    setFormData({...formData, role: selectedRole});
+    // Reset elector checkbox when role changes
+    if (selectedRole !== 'candidate') {
+      setCanBeElector(false);
+    }
   };
 
-  try {
-    const response = await api.register(registrationData);
-    console.log('Registration successful:', response.data);
+  const handleElectionChange = (e) => {
+    setFormData({...formData, selected_election: e.target.value});
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
     
-    // Store token and user data immediately
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
+    if (!formData.role) {
+      setError('Please select a role');
+      setIsLoading(false);
+      return;
     }
-    if (response.data.user_id) {
-      localStorage.setItem('user_id', response.data.user_id.toString());
+
+    if (!formData.selected_election) {
+      setError('Please select an election to participate in');
+      setIsLoading(false);
+      return;
     }
-    if (response.data.email) {
-      localStorage.setItem('email', response.data.email);
+
+    // Convert role to the format your serializer expects
+    const registrationData = {
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      is_candidate: formData.role === 'candidate',
+      is_elector: formData.role === 'elector' || canBeElector,
+      is_admin: false, // Never allow admin registration through UI
+      wallet_address: '',
+      verified: false,
+      approved: false, // Users start unapproved
+      selected_election: parseInt(formData.selected_election)
+    };
+
+    try {
+      const response = await api.register(registrationData);
+      console.log('Registration successful:', response.data);
+      
+      // Don't store token or redirect immediately - user needs approval
+      setError('');
+      
+      // Show success message with election info
+      const selectedElection = availableElections.find(e => e.id === parseInt(formData.selected_election));
+      alert(`Registration successful! You have been registered for "${selectedElection?.title}" election. Please wait for admin approval before you can access your dashboard.`);
+      onFormSwitch('login');
+      
+    } catch (err) {
+      console.error('Registration error:', err);
+      const errors = err.response?.data;
+      if (errors) {
+        const errorMessages = Object.values(errors).flat().join(' ');
+        setError(errorMessages);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Add a small delay to ensure localStorage is written
-    setTimeout(() => {
-      navigate('/dashboard', { replace: true });
-    }, 100);
-    
-  } catch (err) {
-    console.error('Registration error:', err);
-    const errors = err.response?.data;
-    if (errors) {
-      const errorMessages = Object.values(errors).flat().join(' ');
-      setError(errorMessages);
-    } else {
-      setError('Registration failed. Please try again.');
-    }
-  } finally {
-    setIsLoading(false);
+  };
+
+  if (loadingElections) {
+    return (
+      <div className="bg-white rounded-3xl shadow-xl p-8 transition-all duration-500 ease-in-out transform hover:shadow-2xl">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-purple-600 font-medium">Loading available elections...</p>
+        </div>
+      </div>
+    );
   }
-};
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-8 transition-all duration-500 ease-in-out transform hover:shadow-2xl">
@@ -132,6 +175,32 @@ const handleSubmit = async (e) => {
             disabled={isLoading}
           />
         </div>
+
+        {/* Election Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Select Election to Participate In</label>
+          {availableElections.length === 0 ? (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+              <p className="text-yellow-700 font-medium">No active elections available</p>
+              <p className="text-yellow-600 text-sm mt-1">Please contact an administrator to create elections</p>
+            </div>
+          ) : (
+            <select
+              value={formData.selected_election}
+              onChange={handleElectionChange}
+              className="w-full px-4 py-3 rounded-full border-2 border-purple-100 focus:border-purple-500 focus:outline-none transition-colors duration-300"
+              required
+              disabled={isLoading}
+            >
+              <option value="">Choose an election...</option>
+              {availableElections.map((election) => (
+                <option key={election.id} value={election.id}>
+                  {election.title} ({election.election_type.charAt(0).toUpperCase() + election.election_type.slice(1)})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">I want to register as</label>
@@ -142,7 +211,7 @@ const handleSubmit = async (e) => {
                   ? 'border-purple-500 bg-purple-50 shadow-md' 
                   : 'border-gray-200 hover:border-purple-300'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => !isLoading && setFormData({...formData, role: 'candidate'})}
+              onClick={() => !isLoading && handleRoleChange('candidate')}
             >
               <div className="flex justify-center mb-2">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -158,6 +227,7 @@ const handleSubmit = async (e) => {
               <span className={`font-medium ${
                 formData.role === 'candidate' ? 'text-purple-700' : 'text-gray-700'
               }`}>Candidate</span>
+              <p className="text-xs text-gray-500 mt-1">Run for office in elections</p>
             </div>
             
             <div 
@@ -166,7 +236,7 @@ const handleSubmit = async (e) => {
                   ? 'border-purple-500 bg-purple-50 shadow-md' 
                   : 'border-gray-200 hover:border-purple-300'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => !isLoading && setFormData({...formData, role: 'elector'})}
+              onClick={() => !isLoading && handleRoleChange('elector')}
             >
               <div className="flex justify-center mb-2">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -182,13 +252,53 @@ const handleSubmit = async (e) => {
               <span className={`font-medium ${
                 formData.role === 'elector' ? 'text-purple-700' : 'text-gray-700'
               }`}>Elector</span>
+              <p className="text-xs text-gray-500 mt-1">Vote in elections</p>
             </div>
           </div>
         </div>
+
+        {/* Additional option for candidates to also be electors */}
+        {formData.role === 'candidate' && (
+          <div className="bg-purple-50 rounded-2xl p-4">
+            <label className="flex items-center space-x-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={canBeElector}
+                onChange={(e) => setCanBeElector(e.target.checked)}
+                disabled={isLoading}
+                className="w-5 h-5 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+              />
+              <span className="text-sm font-medium text-purple-700">
+                I also want to be able to vote in elections (Elector)
+              </span>
+            </label>
+            <p className="text-xs text-purple-600 mt-2 ml-8">
+              This allows you to both run for office and vote in other elections
+            </p>
+          </div>
+        )}
+
+        {/* Election Info Display */}
+        {formData.selected_election && (
+          <div className="bg-blue-50 rounded-2xl p-4">
+            {(() => {
+              const selectedElection = availableElections.find(e => e.id === parseInt(formData.selected_election));
+              return selectedElection ? (
+                <div>
+                  <h4 className="font-medium text-blue-700 mb-2">Selected Election:</h4>
+                  <p className="text-blue-600 text-sm"><strong>Title:</strong> {selectedElection.title}</p>
+                  <p className="text-blue-600 text-sm"><strong>Type:</strong> {selectedElection.election_type.charAt(0).toUpperCase() + selectedElection.election_type.slice(1)}</p>
+                  <p className="text-blue-600 text-sm"><strong>Start:</strong> {new Date(selectedElection.start_date).toLocaleDateString()}</p>
+                  <p className="text-blue-600 text-sm"><strong>End:</strong> {new Date(selectedElection.end_date).toLocaleDateString()}</p>
+                </div>
+              ) : null;
+            })()}
+          </div>
+        )}
         
         <button 
           type="submit" 
-          disabled={isLoading}
+          disabled={isLoading || availableElections.length === 0}
           className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
           {isLoading ? 'Registering...' : 'Register'}
