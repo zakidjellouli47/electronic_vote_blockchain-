@@ -13,12 +13,14 @@ const Login = ({ onFormSwitch }) => {
     setError('');
     
     try {
-      const response = await api.post('login/', { email, password });
+      // Use api.login instead of api.post
+      const response = await api.login({ email, password });
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user_id', response.data.user_id);
       localStorage.setItem('email', response.data.email);
       navigate('/dashboard');
     } catch (err) {
+      console.log(err)
       setError(err.response?.data?.error || 'Login failed. Please try again.');
     }
   };

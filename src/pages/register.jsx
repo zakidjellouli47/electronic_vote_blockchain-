@@ -10,37 +10,69 @@ const Register = ({ onFormSwitch }) => {
     role: ''
   });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({...formData, [e.target.id]: e.target.value});
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    
-    if (!formData.role) {
-      setError('Please select a role');
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
+  
+  if (!formData.role) {
+    setError('Please select a role');
+    setIsLoading(false);
+    return;
+  }
 
-    try {
-      const response = await api.post('register/', formData);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user_id', response.data.user_id);
-      localStorage.setItem('email', response.data.email);
-      navigate('/dashboard');
-    } catch (err) {
-      const errors = err.response?.data;
-      if (errors) {
-        const errorMessages = Object.values(errors).flat().join(' ');
-        setError(errorMessages);
-      } else {
-        setError('Registration failed. Please try again.');
-      }
-    }
+  // Convert role to the format your serializer expects
+  const registrationData = {
+    username: formData.username,
+    email: formData.email,
+    password: formData.password,
+    is_candidate: formData.role === 'candidate',
+    is_elector: formData.role === 'elector',
+    // Leave wallet_address empty - will be assigned dynamically during blockchain operations
+    wallet_address: '',
+    verified: false
   };
+
+  try {
+    const response = await api.register(registrationData);
+    console.log('Registration successful:', response.data);
+    
+    // Store token and user data immediately
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+    }
+    if (response.data.user_id) {
+      localStorage.setItem('user_id', response.data.user_id.toString());
+    }
+    if (response.data.email) {
+      localStorage.setItem('email', response.data.email);
+    }
+    
+    // Add a small delay to ensure localStorage is written
+    setTimeout(() => {
+      navigate('/dashboard', { replace: true });
+    }, 100);
+    
+  } catch (err) {
+    console.error('Registration error:', err);
+    const errors = err.response?.data;
+    if (errors) {
+      const errorMessages = Object.values(errors).flat().join(' ');
+      setError(errorMessages);
+    } else {
+      setError('Registration failed. Please try again.');
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-8 transition-all duration-500 ease-in-out transform hover:shadow-2xl">
@@ -69,6 +101,7 @@ const Register = ({ onFormSwitch }) => {
             placeholder="John Doe" 
             className="w-full px-4 py-3 rounded-full border-2 border-purple-100 focus:border-purple-500 focus:outline-none transition-colors duration-300"
             required 
+            disabled={isLoading}
           />
         </div>
         
@@ -82,6 +115,7 @@ const Register = ({ onFormSwitch }) => {
             placeholder="youremail@example.com" 
             className="w-full px-4 py-3 rounded-full border-2 border-purple-100 focus:border-purple-500 focus:outline-none transition-colors duration-300"
             required 
+            disabled={isLoading}
           />
         </div>
         
@@ -95,6 +129,7 @@ const Register = ({ onFormSwitch }) => {
             placeholder="********" 
             className="w-full px-4 py-3 rounded-full border-2 border-purple-100 focus:border-purple-500 focus:outline-none transition-colors duration-300"
             required 
+            disabled={isLoading}
           />
         </div>
         
@@ -106,8 +141,8 @@ const Register = ({ onFormSwitch }) => {
                 formData.role === 'candidate' 
                   ? 'border-purple-500 bg-purple-50 shadow-md' 
                   : 'border-gray-200 hover:border-purple-300'
-              }`}
-              onClick={() => setFormData({...formData, role: 'candidate'})}
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => !isLoading && setFormData({...formData, role: 'candidate'})}
             >
               <div className="flex justify-center mb-2">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -130,8 +165,8 @@ const Register = ({ onFormSwitch }) => {
                 formData.role === 'elector' 
                   ? 'border-purple-500 bg-purple-50 shadow-md' 
                   : 'border-gray-200 hover:border-purple-300'
-              }`}
-              onClick={() => setFormData({...formData, role: 'elector'})}
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => !isLoading && setFormData({...formData, role: 'elector'})}
             >
               <div className="flex justify-center mb-2">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
@@ -153,9 +188,10 @@ const Register = ({ onFormSwitch }) => {
         
         <button 
           type="submit" 
-          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+          disabled={isLoading}
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         >
-          Register
+          {isLoading ? 'Registering...' : 'Register'}
         </button>
       </form>
       
@@ -163,7 +199,8 @@ const Register = ({ onFormSwitch }) => {
         Already have an account? 
         <button 
           onClick={() => onFormSwitch('login')} 
-          className="ml-1 text-purple-600 font-medium hover:text-purple-800 transition-colors duration-300"
+          disabled={isLoading}
+          className="ml-1 text-purple-600 font-medium hover:text-purple-800 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Login here
         </button>
