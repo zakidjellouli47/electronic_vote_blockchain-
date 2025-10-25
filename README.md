@@ -51,6 +51,8 @@ This repository contains the **frontend interface**, which provides all pages an
    git clone https://github.com/yourusername/votechain-frontend.git
    cd votechain-frontend
 
-   <img width="577" height="658" alt="Image" src="https://github.com/user-attachments/assets/e5f44bc2-c053-4cc8-9b33-ae3461354295" />
-.
+   
+.<img width="577" height="658" alt="Capture2" src="https://github.com/user-attachments/assets/726c69f1-193d-49a7-a01f-44f25bf4d09a" />
+
+
 
